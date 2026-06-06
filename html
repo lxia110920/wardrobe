@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>動態換裝小遊戲</title>
+    <style>
+        /* 基礎版面樣式 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ffe6f0, #e8f0fe);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #ff6b9d;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .game-container {
+            display: flex;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 20px;
+            gap: 30px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        /* 左側：人物立繪區域 */
+        .character-stage {
+            flex: 1;
+            background: #fff0f5;
+            border-radius: 15px;
+            border: 3px dashed #ffb6c1;
+            height: 450px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* ==================== 動態核心 CSS ==================== */
+        
+        /* 1. 呼吸晃動動畫：讓整個人物基礎容器規律上下微調與極輕微縮放 */
+        .character-bundle {
+            position: relative;
+            width: 200px;
+            height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: breathe 3.5s ease-in-out infinite; /* 3.5秒重複一次呼吸 */
+            transform-origin: bottom center; /* 以底部為中心晃動 */
+        }
+
+        @keyframes breathe {
+            0%, 100% {
+                transform: translateY(0) scaleY(1);
+            }
+            50% {
+                transform: translateY(-5px) scaleY(1.02); /* 向上漂移5像素，身體微微拉長 */
+            }
+        }
+
+        /* 2. 圖層基礎設定 */
+        .layer {
+            position: absolute;
+            transition: all 0.3s ease;
+        }
+
+        /* 用 Emoji 模擬時的定位與層級 */
+        .layer-body { font-size: 120px; z-index: 1; bottom: 40px; }
+        .layer-hair { font-size: 90px; z-index: 4; top: 30px; }
+        .layer-clothes { font-size: 100px; z-index: 3; bottom: 50px; }
+        .layer-accessory { font-size: 60px; z-index: 5; top: 10px; }
+
+        /* 3. 眨眼動畫：獨立套用在眼睛圖層上 */
+        .layer-eyes {
+            font-size: 35px;
+            z-index: 2;
+            top: 95px;
+            animation: blink 4s ease-in-out infinite; /* 4秒眨一次眼 */
+            transform-origin: center;
+        }
+
+        @keyframes blink {
+            0%, 96%, 100% {
+                transform: scaleY(1); /* 正常張眼 */
+            }
+            98% {
+                transform: scaleY(0.05); /* 瞬間閉眼（垂直壓縮至極扁） */
+            }
+        }
+        /* ==================================================== */
+
+        /* 右側：控制按鍵區域 */
+        .control-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .category-title {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 8px;
+            border-left: 4px solid #ff6b9d;
+            padding-left: 8px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background-color: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #ffe6f0;
+            border-color: #ff6b9d;
+            transform: scale(1.05);
+        }
+
+        button.active {
+            background-color: #ff6b9d;
+            color: white;
+            border-color: #ff4785;
+        }
+
+        @media (max-width: 600px) {
+            .game-container { flex-direction: column; }
+            .character-stage { height: 350px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>✨ 動態換裝小遊戲 ✨</h1>
+
+    <div class="game-container">
+        <!-- 左側：人物與衣服立繪展示區 -->
+        <div class="character-stage">
+            
+            <!-- 將整個人物打包在同一個 Bundle 裡一起做呼吸動畫 -->
+            <div class="character-bundle">
+                <!-- 身體基底 -->
+                <div class="layer layer-body" id="char-body">👧</div>
+                
+                <!-- 獨立的眼睛圖層（負責單獨眨眼） -->
+                <div class="layer layer-eyes" id="char-eyes">👀</div>
+                
+                <!-- 髮型圖層 -->
+                <div class="layer layer-hair" id="char-hair">🎀</div>
+                
+                <!-- 衣服圖層 -->
+                <div class="layer layer-clothes" id="char-clothes">👗</div>
+                
+                <!-- 配件圖層 -->
+                <div class="layer layer-accessory" id="char-accessory">👑</div>
+            </div>
+
+        </div>
+
+        <!-- 右側：切換按鍵區 -->
+        <div class="control-panel">
+            
+            <!-- 髮型切換 -->
+            <div>
+                <div class="category-title">選擇髮型 / 頭飾</div>
+                <div class="btn-group">
+                    <button class="active" onclick="changeItem('hair', '🎀', this)">蝴蝶結</button>
+                    <button onclick="changeItem('hair', '🎩', this)">高頂帽</button>
+                    <button onclick="changeItem('hair', '🧢', this)">棒球帽</button>
+                    <button onclick="changeItem('hair', '', this)">無</button>
+                </div>
+            </div>
+
+            <!-- 服裝切換 -->
+            <div>
+                <div class="category-title">選擇衣服</div>
+                <div class="btn-group">
+                    <button class="active" onclick="changeItem('clothes', '👗', this)">洋裝</button>
+                    <button onclick="changeItem('clothes', '👘', this)">和服</button>
+                    <button onclick="changeItem('clothes', '👚', this)">休閒服</button>
+                    <button onclick="changeItem('clothes', '🦸‍♀️', this)">英雄披風</button>
+                </div>
+            </div>
+
+            <!-- 配件切換 -->
+            <div>
+                <div class="category-title">選擇配件</div>
+                <div class="btn-group">
+                    <button class="active" onclick="changeItem('accessory', '👑', this)">皇冠</button>
+                    <button onclick="changeItem('accessory', '🕶️', this)">墨鏡</button>
+                    <button onclick="changeItem('accessory', '✨', this)">魔法光芒</button>
+                    <button onclick="changeItem('accessory', '', this)">無</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function changeItem(layerId, value, button) {
+            const targetLayer = document.getElementById(`char-${layerId}`);
+            if (targetLayer) {
+                targetLayer.innerText = value;
+            }
+
+            const btnGroup = button.parentElement;
+            const buttons = btnGroup.getElementsByTagName('button');
+            for (let btn of buttons) {
+                btn.classList.remove('active');
+            }
+            button.classList.add('active');
+        }
+    </script>
+</body>
+</html>
